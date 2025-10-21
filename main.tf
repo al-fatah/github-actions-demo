@@ -1,29 +1,15 @@
-module "vpc" {
-  source = "terraform-aws-modules/vpc/aws"
+provider "aws" {
+  region = "us-east-1"
+}
 
-  name = "activity1-vpc"
-  cidr = "10.0.0.0/16"
-
-  azs = ["us-east-1a", "us-east-1b", "us-east-1c"]
-
-  public_subnets = [
-    "10.0.1.0/24",
-    "10.0.2.0/24",
-    "10.0.3.0/24"
-  ]
-
-  private_subnets = [
-    "10.0.101.0/24",
-    "10.0.102.0/24",
-    "10.0.103.0/24"
-  ]
-
-  enable_nat_gateway   = false
-  single_nat_gateway   = false
-  enable_dns_hostnames = true
-
-  tags = {
-    Terraform = "true"
-    Activity  = "IaC-HandsOn"
+terraform {
+  backend "s3" {
+    bucket = "sctp-ce11-tfstate"
+    key    = "alfatah-31-tfstate.tfstate"
+    region = "us-east-1"
   }
+}
+
+resource "aws_s3_bucket" "bucket" {
+  bucket = "alfatah-31-bucket-unique-name-123456"
 }
