@@ -1,0 +1,63 @@
+name: Terraform Destroy
+
+on:
+  # Manual trigger with a confirmation gate
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type YES to confirm destroying all Terraform-managed resources"
+        required: true
+        default: "NO"
+      working_directory:
+        description: "Terraform working directory (leave blank for repo root)"
+        required: false
+        default: ""
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  destroy:
+    if: github.event.inputs.confirm == 'YES'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set working directory
+        id: wd
+        run: |
+          if [ -n "${{ github.event.inputs.working_directory }}" ]; then
+            echo "dir=${{ github.event.inputs.working_directory }}" >> $GITHUB_OUTPUT
+          else
+            echo "dir=." >> $GITHUB_OUTPUT
+          fi
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Terraform Init (remote backend)
+        working-directory: ${{ steps.wd.outputs.dir }}
+        run: terraform init -input=false -lock-timeout=5m
+
+      - name: Show Terraform State (helpful diagnostics)
+        id: state
+        working-directory: ${{ steps.wd.outputs.dir }}
+        continue-on-error: true
+        run: terraform state list || true
+
+      - name: Terraform Plan -destroy
+        working-directory: ${{ steps.wd.outputs.dir }}
+        run: terraform plan -destroy -input=false
+
+      - name: Terraform Destroy
+        working-directory: ${{ steps.wd.outputs.dir }}
+        run: terraform destroy -auto-approve -input=false -lock-timeout=5m
