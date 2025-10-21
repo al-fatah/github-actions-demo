@@ -11,5 +11,5 @@ terraform {
 }
 
 resource "aws_s3_bucket" "bucket" {
-  bucket = "alfatah-31-bucket-unique-name-123456"
+  bucket = "alfatah-31-bucket"
 }
